@@ -1,35 +1,42 @@
-name: Update README
+name: Merge and Append
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [opened, synchronize]
+env:
+  MAIN_BRANCH: main
+  SUBMODULE_BRANCH: submodule
+  ALIAS_FILE_PATH: submodule/alias.txt
+  README_FILE_PATH: README.md
 jobs:
-  update-readme:
+  merge-and-append:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - name: Read through files
-      run: |
-        # Read through the source file
-        source=$(cat alias.txt)
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-        # Replace a placeholder in the README file with the source content
-        sed -i "s/{source}/$source/g" README.md
-    - name: Commit changes
-      uses: actions/github-script@v3.1.0
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const commitMsg = "Update README with source content";
-          const filePath = "README.md";
-          const fileContent = fs.readFileSync(filePath, 'utf8');
-          const newContent = fileContent.replace(/{source}/g, process.env.SOURCE_CONTENT);
-          await github.repos.createOrUpdateFileContents({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            path: filePath,
-            message: commitMsg,
-            content: Buffer.from(newContent).toString('base64'),
-            sha: context.payload.head_commit.id
-          });
+      - name: Merge pull request
+        uses: rtCamp/github-action-auto-merge@v1.2.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_LABELS: "auto-merge"
+
+      - name: Append alias.txt to README.md
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ env.MAIN_BRANCH }}
+          path: main-branch
+
+      - name: Read alias.txt
+        id: read-alias
+        run: |
+          echo "::set-output name=contents::$(cat $ALIAS_FILE_PATH)"
+
+      - name: Append contents to README.md
+        run: |
+          echo "$(cat main-branch/$README_FILE_PATH)$(echo)$(echo)::set-output name=contents::${{ steps.read-alias.outputs.contents }}" > main-branch/$README_FILE_PATH
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Automatically append alias.txt to README.md"
+          commit_options: "--no-verify"
