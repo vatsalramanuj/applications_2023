@@ -1,0 +1,35 @@
+name: Update README
+on:
+  push:
+    branches:
+      - main
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Read through files
+      run: |
+        # Read through the source file
+        source=$(cat alias.txt)
+
+        # Replace a placeholder in the README file with the source content
+        sed -i "s/{source}/$source/g" README.md
+    - name: Commit changes
+      uses: actions/github-script@v3.1.0
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const commitMsg = "Update README with source content";
+          const filePath = "README.md";
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const newContent = fileContent.replace(/{source}/g, process.env.SOURCE_CONTENT);
+          await github.repos.createOrUpdateFileContents({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            path: filePath,
+            message: commitMsg,
+            content: Buffer.from(newContent).toString('base64'),
+            sha: context.payload.head_commit.id
+          });
