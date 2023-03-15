@@ -1,42 +1,56 @@
-name: Merge and Append
+name: Merge Request
+
 on:
   pull_request:
-    types: [opened, synchronize]
-env:
-  MAIN_BRANCH: main
-  SUBMODULE_BRANCH: submodule
-  ALIAS_FILE_PATH: submodule/alias.txt
-  README_FILE_PATH: README.md
+    types: [opened]
+
 jobs:
-  merge-and-append:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Merge pull request
-        uses: rtCamp/github-action-auto-merge@v1.2.1
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MERGE_LABELS: "auto-merge"
-
-      - name: Append alias.txt to README.md
+      - name: Checkout Repository
         uses: actions/checkout@v2
         with:
-          ref: ${{ env.MAIN_BRANCH }}
-          path: main-branch
-
-      - name: Read alias.txt
-        id: read-alias
+          submodules: recursive
+      - name: Read Alias File
+        id: read_alias
         run: |
-          echo "::set-output name=contents::$(cat $ALIAS_FILE_PATH)"
-
-      - name: Append contents to README.md
-        run: |
-          echo "$(cat main-branch/$README_FILE_PATH)$(echo)$(echo)::set-output name=contents::${{ steps.read-alias.outputs.contents }}" > main-branch/$README_FILE_PATH
-
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v4
+          cd submodule
+          cat alias.txt
+      - name: Accept Merge Request
+        uses: github-script@v5
         with:
-          commit_message: "Automatically append alias.txt to README.md"
-          commit_options: "--no-verify"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const payload = context.payload;
+            const pullRequest = payload.pull_request;
+            const owner = payload.repository.owner.login;
+            const repo = payload.repository.name;
+            await github.pulls.merge({
+              owner,
+              repo,
+              pull_number: pullRequest.number,
+              merge_method: 'merge',
+            });
+      - name: Append to README
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const payload = context.payload;
+            const pullRequest = payload.pull_request;
+            const owner = payload.repository.owner.login;
+            const repo = payload.repository.name;
+            const aliasFile = await github.request(`GET /repos/${owner}/${repo}/contents/submodule/alias.txt`);
+            const aliasContent = Buffer.from(aliasFile.data.content, 'base64').toString('utf-8');
+            const readmeFile = await github.request(`GET /repos/${owner}/${repo}/contents/README.md`);
+            const readmeContent = Buffer.from(readmeFile.data.content, 'base64').toString('utf-8');
+            const updatedContent = readmeContent + '\n' + aliasContent;
+            await github.repos.createOrUpdateFileContents({
+              owner,
+              repo,
+              path: 'README.md',
+              message: `Updated README with ${aliasFile.name}`,
+              content: Buffer.from(updatedContent).toString('base64'),
+              sha: readmeFile.data.sha,
+              branch: 'main',
+            });
