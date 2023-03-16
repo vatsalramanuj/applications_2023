@@ -1,0 +1,31 @@
+name: Merge on Checks
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Check if any files are deleted
+        run: |
+          if git diff --name-only --diff-filter=D ${{ github.base_ref }}..${{ github.head_ref }} | grep -v '^\.github/workflows/' | grep -v '^\.github/ISSUE_TEMPLATE/'; then
+            echo "This branch deletes files, cannot merge"
+            exit 1
+          else
+            echo "No files deleted, continuing"
+          fi
+      - name: Append alias.txt to readme.md
+        run: |
+          cat alias.txt >> readme.md
+          git add readme.md
+          git commit -m "Append alias.txt to readme.md"
+      - name: Merge pull request
+        uses: peter-evans/merge-on-green@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-method: squash
+          delete-branch: true
