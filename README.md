@@ -5,6 +5,6 @@ Above you'll be able to see Sample_Submission. Your folder after the pull reques
 Make sure you upload ```alias.txt``` with your alias name too.
 
 Applications received from :
-* Sanidhya Mahale (Incompletely Configured git submodule, hint: paste the command in the terminal, and pul request again).  
+* Sanidhya Mahale  
 * Anarchy
 * Micheal Scott
