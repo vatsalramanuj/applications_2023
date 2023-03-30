@@ -7,3 +7,4 @@ Make sure you upload ```alias.txt``` with your alias name too.
 Applications received from :
 * Sanidhya Mahale (Incompletely Configured git submodule, hint: paste the command in the terminal, and pul request again).  
 * Anarchy
+* Micheal Scott
