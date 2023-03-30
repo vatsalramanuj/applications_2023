@@ -4,3 +4,6 @@
 [submodule "me22b205"]
 	path = me22b205
 	url = https://github.com/ANARCHY-ME-205/ABHIYAAN_TASKS.git
+[submodule "EP22B002"]
+	path = EP22B002
+	url = https://github.com/vatsalramanuj/abhiyaan_application.git
