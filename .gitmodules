@@ -1,6 +1,7 @@
 [submodule "Sample_Submission"]
 	path = Sample_Submission
 	url = https://github.com/abhiyaan-apps/Sample_Submission.git
+	branch = main
 [submodule "me22b205"]
 	path = me22b205
 	url = https://github.com/ANARCHY-ME-205/ABHIYAAN_TASKS.git
